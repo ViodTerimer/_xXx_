@@ -1,5 +1,3 @@
-local Key = {"669223", "WTHP"}
-
 if game.PlaceId == 4639625707 then
   loadstring(game:HttpGet("https://raw.githubusercontent.com/ViodTerimer/_xXx_/refs/heads/main/WT.lua"))()
 else
