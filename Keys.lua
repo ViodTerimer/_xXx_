@@ -1,1 +1,1 @@
-"WTHP", "Hi", "nigger"
+{"WTHP", "Hi", "nigger"}
