@@ -1,7 +1,7 @@
 local StartTheme = "AmberGlow"
 local function LaunchNH_WT(LTheme)
 
-local version = "0.9.9"
+local version = "0.9.8.nigger"
 local DC = "https://discord.gg/EEMafffGeY"
 local Key = {"669223", "WTHP"}
 local NHIcon = 7733752575
