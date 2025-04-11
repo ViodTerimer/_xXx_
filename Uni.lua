@@ -1,9 +1,9 @@
 local StartTheme = "AmberGlow"
 local function LaunchNH_Uni(LTheme)
 
-local version = "0.9.8"
+local version = "0.9.9"
 local DC = "https://discord.gg/EEMafffGeY"
-local Key = {"557743", "WTHP"}
+local Key = {"443356", "WTHP"}
 local NHIcon = 7733752575
 
 print("")
