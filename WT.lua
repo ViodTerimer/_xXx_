@@ -1,9 +1,10 @@
 local StartTheme = "AmberGlow"
 local function LaunchNH_WT(LTheme)
 
-local version = "0.9.8"
+local version = "0.9.9"
 local DC = "https://discord.gg/EEMafffGeY"
-local Key = {"557743", "WTHP"}
+local Key = {"443356", "WTHP"}
+local PW = "WTHP-Vincent"
 local NHIcon = 7733752575
 
 print("")
@@ -65,7 +66,7 @@ local Window = Rayfield:CreateWindow({
    KeySettings = {
       Title = "Nebula Hub | ⚔️ War Tycoon ⚡ | v" .. version,
       Subtitle = "Enter Key",
-      Note = "Free Key in Discord | "..DC, -- Use this to tell the user how to get a key
+      Note = "Free Key in our Discord in #get-nebula-hub channel| " .. DC, -- Use this to tell the user how to get a key
       FileName = "WTHP", -- It is recommended to use something unique as other scripts using Rayfield may overwrite your key file
       SaveKey = true, -- The user's key will be saved, but if you change the key, they will be unable to use your script
       GrabKeyFromSite = false, -- If this is true, set Key below to the RAW site you would like Rayfield to get the key from
@@ -84,8 +85,6 @@ local HBE = Window:CreateTab("HitBox Extender", 7733771982) -- Title, Image
 
 local WS = Window:CreateTab("Gun Scripts", 7733992424) -- Title, Image
 
-local GunTP = Window:CreateTab("Gun TP", 7733765307)
-
 local RPG = Window:CreateTab("RPG Script", 7743875263)
 
 local OtherScripts = Window:CreateTab("Other Features", 7734058345) -- Title, Image
@@ -101,7 +100,6 @@ local Divider = BaseTP:CreateDivider()
 local Divider = HBE:CreateDivider()
 local Divider = RPG:CreateDivider()
 local Divider = WS:CreateDivider()
-local Divider = GunTP:CreateDivider()
 local Divider = OtherScripts:CreateDivider()
 local Divider = LoadScripts:CreateDivider()
 
@@ -815,133 +813,160 @@ local Dropdown = HBE:CreateDropdown({
 
 -- RPG Teleport
 
-local UserInputService = game:GetService("UserInputService")
 local Players = game:GetService("Players")
-local LocalPlayer = Players.LocalPlayer
-local playerName = game:GetService("Players").LocalPlayer.Name
-local Camera = workspace.CurrentCamera
 local RunService = game:GetService("RunService")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local Camera = workspace.CurrentCamera
+
+local localPlayer = Players.LocalPlayer
 local RocketSystem = ReplicatedStorage:WaitForChild("RocketSystem")
 local RocketEvents = RocketSystem:WaitForChild("Events")
 local FireRocketEvent = RocketEvents:WaitForChild("FireRocket")
 local RocketHitEvent = RocketEvents:WaitForChild("RocketHit")
+
 local WhiteListTable = {}
-
-local Section = RPG:CreateSection("Silent Explosion")
-
-local SilentExploOn
-local Toggle = RPG:CreateToggle({
-	Name = "Stinger - Silent Explosion (press G)",
-	CurrentValue = false,
-	Flag = "Toggle1",
-	Callback = function(Value)
-	SilentExploOn = Value
-
-
 local isFiring = false
-local rpgSpamEnabled = Value
-local isHoldingG = false
-local maxDistance = 3000  
+local rpgSpamEnabled = true
+local maxDistance = 5000
+local SSEwaitTime = 20
+
+local Ispredicting = false
+
+-- Function to get local player's ping in seconds
+local function getPing()
+    return (localPlayer:GetNetworkPing() or 0) / 1000 -- Convert ms to seconds
+end
+
+-- Function to predict position
+local function predictPosition(targetPlayer)
+    if not targetPlayer or not targetPlayer.Character then return nil end
+    local character = targetPlayer.Character
+    local rootPart = character:FindFirstChild("HumanoidRootPart")
+    if not rootPart then return nil end
+
+    local velocity = rootPart.Velocity -- Target player's velocity
+    local ping = getPing() -- Local player's ping in seconds
+    local rocketSpeed = 200 
+
+    -- Distance from shooter to target
+    local distance = (rootPart.Position - localPlayer.Character.HumanoidRootPart.Position).Magnitude
+    local travelTime = distance / rocketSpeed
+
+    -- Predict future position using both ping delay and estimated rocket travel time
+local predictedPosition = rootPart.Position + (velocity * travelTime * 0.01)
+    
+    return predictedPosition
+end
 
 local function isPlayerWhitelisted(player)
     for _, v in ipairs(WhiteListTable) do
-        if v == player.Name then -- Vergleicht direkt mit dem Spielernamen (String)
-            return true
-        end
+        if tostring(v) == player.Name then return true end
     end
     return false
 end
 
 local function getPlayersInRadius()
     local targets = {}
-
     for _, player in pairs(Players:GetPlayers()) do
-        if player ~= LocalPlayer and player.Character and player.Character:FindFirstChild("HumanoidRootPart") and not isPlayerWhitelisted(player) and SilentExploOn == true then
-            
-            local rootPart = player.Character.HumanoidRootPart
-            local distance = (LocalPlayer.Character.HumanoidRootPart.Position - rootPart.Position).Magnitude
-            
-            if distance <= maxDistance then
-                table.insert(targets, rootPart.Position)
-            end
+        if player ~= localPlayer and player.Character and player.Character:FindFirstChild("HumanoidRootPart") and not isPlayerWhitelisted(player) then
+            local predictedPos = predictPosition(player)
+            if predictedPos and Ispredicting then
+                table.insert(targets, predictedPos)
+            else
+				local rootPart = player.Character.HumanoidRootPart
+				local distance = (localPlayer.Character.HumanoidRootPart.Position - rootPart.Position).Magnitude
+
+				if distance <= maxDistance then
+					table.insert(targets, rootPart.Position)
+				end
+			end
         end
     end
-
     return targets
 end
 
-
 local function fireRocket(targetPosition)
-    local Weapon = LocalPlayer.Character:FindFirstChild("Stinger")
+    if not targetPosition then return end -- Ensure targetPosition is valid
+    
+    local Weapon = localPlayer.Character and localPlayer.Character:FindFirstChild("Stinger")
     if not Weapon then return end
 
-    local RocketID = tostring(FireRocketEvent:InvokeServer(Camera.CFrame.LookVector, Weapon, Weapon, targetPosition))
-
-    if targetPosition then
+    
+    local RocketID = FireRocketEvent:InvokeServer(Camera.CFrame.LookVector, Weapon, Weapon, targetPosition)
+    if RocketID then
         local HitArgs = {
             [1] = targetPosition,
             [2] = Vector3.new(0, 0.1, 0),
             [3] = Weapon,
             [4] = Weapon,
             [5] = nil,  
-            [7] = LocalPlayer.Name .. "Rocket" .. RocketID
+            [7] = localPlayer.Name .. "Rocket" .. tostring(RocketID)
         }
         RocketHitEvent:FireServer(unpack(HitArgs))
     end
 end
 
 local function startFiring()
-    if isFiring or not rpgSpamEnabled then return end
+    if isFiring then return end
     isFiring = true
-
     task.spawn(function()
-        while isFiring and rpgSpamEnabled and isHoldingG do
+        while isFiring and rpgSpamEnabled do
             local targets = getPlayersInRadius()
             if #targets > 0 then
                 for i = 1, math.min(3, #targets) do  
-                    task.spawn(fireRocket, targets[i])
+                    task.spawn(function()
+                        fireRocket(targets[i])
+                    end)
                 end
             end
-            task.wait(0.002) 
+            task.wait(SSEwaitTime / 1000)
         end
     end)
 end
 
 local function stopFiring()
-    isFiring = false
+	isFiring = false
 end
 
 
-    rpgSpamEnabled = Value
-    if Value then
-        startFiring()
-    else
-        stopFiring()
-    end
 
-UserInputService.InputBegan:Connect(function(input, gameProcessed)
-    if input.KeyCode == Enum.KeyCode.G and not gameProcessed then
-        isHoldingG = true
-        if rpgSpamEnabled then
-            startFiring()
-        end
-    end
-end)
 
-UserInputService.InputEnded:Connect(function(input, gameProcessed)
-    if input.KeyCode == Enum.KeyCode.G and not gameProcessed then
-        isHoldingG = false
-        stopFiring()
-    end
-end)
+local Section = RPG:CreateSection("Silent Explosion")
 
-end
+local Toggle = RPG:CreateToggle({
+	Name = "Stinger - Silent Explosion",
+	CurrentValue = false,
+	Flag = "Toggle1",
+	Callback = function(Value)
+		rpgSpamEnabled = Value
+	end
 })
 
+local Keybind = RPG:CreateKeybind({
+   Name = "Stinger Keybind",
+   CurrentKeybind = "G",
+   HoldToInteract = true,
+   Flag = "Keybind1", -- A flag is the identifier for the configuration file, make sure every element has a different flag if you're using configuration saving to ensure no overlaps
+   Callback = function(Keybind)
+		if Keybind and rpgSpamEnabled == true then
+			startFiring()
+		else
+			stopFiring()
+		end
+   end,
+})
 
-local WhiteListNum = 0
+local Toggle = RPG:CreateToggle({
+	Name = "Enable Predicting Mode (Laggy)",
+	CurrentValue = false,
+	Flag = "Toggle1",
+	Callback = function(Value)
+		Ispredicting = Value
+	end
+})
+
 local WhiteListLabel = RPG:CreateLabel("White List: ")
+local WhiteListNum = 0
 
 local Input = RPG:CreateInput({
    Name = "Add to Whitelist",
@@ -979,11 +1004,22 @@ local Input = RPG:CreateInput({
    end,
 })
 
+local Input = RPG:CreateInput({
+   Name = "Time between Explosions (in ms) recomended 20",
+   CurrentValue = "20",
+   PlaceholderText = "ms",
+   RemoveTextAfterFocusLost = false,
+   Flag = "Input1",
+   Callback = function(Text)
+		SSEwaitTime = tonumber(Text)
+   end,
+})
 
 
 
 
-local Label = RPG:CreateLabel("Tip: Spawns Explosion in the Enemy Player")
+
+
 
 
 local Section = RPG:CreateSection("RPG Click")
@@ -1079,8 +1115,8 @@ local Toggle = RPG:CreateToggle({
 	Callback = function(Value)
 		RPGSpamtoggle = Value
 	end
-})
-
+}) 
+local RPGSpamMode = "One Line (standard)"
 local RPGSpamstate
 local Keybind = RPG:CreateKeybind({
    Name = "RPG Spam Keybind",
@@ -1090,11 +1126,58 @@ local Keybind = RPG:CreateKeybind({
    Callback = function(Keybind)
 		RPGSpamstate = Keybind 
 		while RPGSpamstate and RPGSpamtoggle do 
-			
+			if RPGSpamMode == "Shotgun Mode" then
+				local function getRandomSpread(baseDirection, spreadAngle)
+					-- Erstellt eine zufällige Rotationsmatrix innerhalb des Spread-Winkels
+					local randomYaw = math.rad(math.random(-spreadAngle, spreadAngle)) -- Horizontale Streuung
+					local randomPitch = math.rad(math.random(-spreadAngle, spreadAngle)) -- Vertikale Streuung
+
+					-- Erstellt eine zufällige Richtung basierend auf der Kamera
+					local spreadCFrame = CFrame.Angles(randomPitch, randomYaw, 0)
+					return (spreadCFrame * baseDirection).LookVector
+				end
+
+				local function fireShotgunRPG(shots, spread)
+					for _ = 1, shots do
+						local fireRocketVector = getRandomSpread(workspace.Camera.CFrame, spread)
+						local fireRocketPosition = workspace.Camera.CFrame.Position
+
+						game:GetService("ReplicatedStorage").RocketSystem.Events.FireRocket:InvokeServer(
+							fireRocketVector,
+							workspace[game:GetService("Players").LocalPlayer.Name].RPG,
+							workspace[game:GetService("Players").LocalPlayer.Name].RPG,
+							fireRocketPosition
+						)
+
+						local fireRocketClientTable = {
+							["expShake"] = {["fadeInTime"] = 0.01, ["magnitude"] = 3, ["rotInfluence"] = {0.4, 0, 0.4}, ["fadeOutTime"] = 1, ["posInfluence"] = {1, 1, 0}, ["roughness"] = 3},
+							["gravity"] = Vector3.new(0, -20, 0), ["HelicopterDamage"] = 450, ["FireRate"] = 150, ["VehicleDamage"] = 350, ["ExpName"] = "RPG",
+							["RocketAmount"] = 1, ["ExpRadius"] = 12, ["BoatDamage"] = 300, ["TankDamage"] = 300, ["Acceleration"] = 8, ["ShieldDamage"] = 11170,
+							["Distance"] = 400000, ["PlaneDamage"] = 500, ["GunshipDamage"] = 170, ["velocity"] = 200, ["ExplosionDamage"] = 120
+						}
+
+						local fireRocketClientInstance1 = game:GetService("ReplicatedStorage").RocketSystem.Rockets["RPG Rocket"]
+						local fireRocketClientInstance2 = workspace[game:GetService("Players").LocalPlayer.Name].RPG
+						local fireRocketClientInstance3 = workspace[game:GetService("Players").LocalPlayer.Name].RPG
+
+						game:GetService("ReplicatedStorage").RocketSystem.Events.FireRocketClient:Fire(
+							fireRocketPosition, fireRocketVector, fireRocketClientTable,
+							fireRocketClientInstance1, fireRocketClientInstance2, fireRocketClientInstance3,
+							game:GetService("Players").LocalPlayer, nil, { [1] = workspace.Camera:FindFirstChild("RPG") }
+						)
+						
+						wait(0.05) -- Kleiner Delay zwischen den Schüssen
+					end
+				end
+
+				-- Beispiel: 8 Raketen mit einer Streuung von 15 Grad
+				fireShotgunRPG(10, 20)
+
+			elseif RPGSpamMode == "One Line (standard)" then
 				local fireRocketVector = workspace.Camera.CFrame.LookVector
 				local fireRocketPosition = workspace.Camera.CFrame.Position
 				game:GetService("ReplicatedStorage").RocketSystem.Events.FireRocket:InvokeServer(
-				fireRocketVector, workspace[game:GetService("Players").LocalPlayer.Name].RPG, workspace[game:GetService("Players").LocalPlayer.Name].RPG, fireRocketPosition
+				fireRocketVector, workspace[game:GetService("Players").LocalPlayer.Name].RPG, workspace[game:GetService("Players").LocalPlayer.Name].RPG, fireRocketPosition 
 				)
 
 				local fireRocketClientTable = {
@@ -1111,8 +1194,21 @@ local Keybind = RPG:CreateKeybind({
 					workspace.Camera.CFrame.Position, workspace.Camera.CFrame.LookVector, fireRocketClientTable, fireRocketClientInstance1, fireRocketClientInstance2, fireRocketClientInstance3,
 					game:GetService("Players").LocalPlayer, nil, { [1] = workspace.Camera:FindFirstChild("RPG") }
 				)
-
+			end
 			task.wait()
+		end
+   end,
+})
+
+local Dropdown = RPG:CreateDropdown({
+   Name = "select Fire Mode",
+   Options = {"One Line (standard)","Shotgun Mode"},
+   CurrentOption = {"One Line (standard)"},
+   MultipleOptions = false,
+   Flag = "Dropdown1", -- A flag is the identifier for the configuration file, make sure every element has a different flag if you're using configuration saving to ensure no overlaps
+   Callback = function(Options)
+		for _, v in ipairs(Options) do
+			RPGSpamMode = tostring(v)
 		end
    end,
 })
@@ -1855,262 +1951,6 @@ local Button = OtherScripts:CreateButton({
 })
 
 
--- Gun Teleport
-
-local HomeGTP
-
-if game.Players.LocalPlayer.Team.Name ~= "Loading" then
-	if game.workspace.Tycoon.Tycoons[game.Players.LocalPlayer.Team.Name].Essentials:FindFirstChild("Part") then
-		HomeGTP = game.workspace.Tycoon.Tycoons[game.Players.LocalPlayer.Team.Name].Essentials.Part.CFrame
-	end
-end
-
-local DE
-local FAL
-local Barret
-local ES
-local M1
-local AWP
-
-local function TPDE(base)
-	if game.workspace.Tycoon.Tycoons:FindFirstChild(base) then
-		if game.workspace.Tycoon.Tycoons[base].PurchasedObjects:FindFirstChild("Desert Eagle Giver") then
-			DE = game.workspace.Tycoon.Tycoons[base].PurchasedObjects["Desert Eagle Giver"]["Gamepass Gun Case"].CFrame
-		end
-	end
-end
-
-local function TPFAL(base)
-	if game.workspace.Tycoon.Tycoons:FindFirstChild(base) then
-		if game.workspace.Tycoon.Tycoons[base].PurchasedObjects:FindFirstChild("FAL Heavy Giver") then
-			FAL = game.workspace.Tycoon.Tycoons[base].PurchasedObjects["FAL Heavy Giver"]["Gamepass Gun Case"].CFrame
-		end
-	end
-end
-
-local function TPB(base)
-	if game.workspace.Tycoon.Tycoons:FindFirstChild(base) then
-		if game.workspace.Tycoon.Tycoons[base].PurchasedObjects:FindFirstChild("Barrett M82 Giver") then
-			Barret = game.workspace.Tycoon.Tycoons[base].PurchasedObjects["Barrett M82 Giver"]["Gamepass Gun Case"].CFrame
-		end
-	end
-end
-
-local function TPES(base)
-	if game.workspace.Tycoon.Tycoons:FindFirstChild(base) then
-		if game.workspace.Tycoon.Tycoons[base].PurchasedObjects:FindFirstChild("Explosive Sniper Giver") then
-			ES = game.workspace.Tycoon.Tycoons[base].PurchasedObjects["Explosive Sniper Giver"]["Gamepass Gun Case"].CFrame
-		end
-	end
-end
-
-local function TPAWP(base)
-	if game.workspace.Tycoon.Tycoons:FindFirstChild(base) then
-		if game.workspace.Tycoon.Tycoons[base].PurchasedObjects:FindFirstChild("AWP Giver") then
-			AWP = game.workspace.Tycoon.Tycoons[base].PurchasedObjects["AWP Giver"]["Gamepass Gun Case"].CFrame
-		end
-	end
-end
-
-local function TPM1(base)
-	if game.workspace.Tycoon.Tycoons:FindFirstChild(base) then
-		if game.workspace.Tycoon.Tycoons[base].PurchasedObjects:FindFirstChild("WW2 US Army Pack") then
-			M1 = game.workspace.Tycoon.Tycoons[base].PurchasedObjects["WW2 US Army Pack"]["Handle"].CFrame
-		end
-	end
-end
-
-local GTP_wtime = 1.5
-
-local function GTP(base)
-	wait(GTP_wtime / 4 * 3)
-	TPDE(base)
-	TPFAL(base)
-	TPB(base)
-	TPES(base)
-	TPAWP(base)
-	TPM1(base)
-	wait(GTP_wtime / 4 * 1)
-end
-
-
-local Button = GunTP:CreateButton({
-	Name = "Check for GP Guns (click while in your Base)",
-	Callback = function()
-
-		if game.Players.LocalPlayer.Team.Name ~= "Loading" then
-			if game.workspace.Tycoon.Tycoons[game.Players.LocalPlayer.Team.Name].Essentials:FindFirstChild("Part") then
-				HomeGTP = game.workspace.Tycoon.Tycoons[game.Players.LocalPlayer.Team.Name].Essentials.Part.CFrame
-			end
-		end
-
-		game.Players.LocalPlayer.Character.HumanoidRootPart.CFrame = CFrame.new(-1127.65759, 64.9999695, -4625.14502, 0.971414387, 4.37177192e-08, 0.237390086, -1.74242594e-08, 1, -1.12858729e-07, -0.237390086, 1.05496248e-07, 0.971414387)
-		GTP("Alpha")
-		game.Players.LocalPlayer.Character.HumanoidRootPart.CFrame = CFrame.new(-246.867355, 64.9999847, -4744.6499, 0.999873161, -2.60599387e-09, 0.0159270614, 4.01510869e-09, 1, -8.84410269e-08, -0.0159270614, 8.84937563e-08, 0.999873161)
-		GTP("Bravo")
-		game.Players.LocalPlayer.Character.HumanoidRootPart.CFrame = CFrame.new(780.177856, 66.9999695, -4554.39551, 0.96430552, 6.9545516e-09, -0.264792144, 2.04475082e-13, 1, 2.62649351e-08, 0.264792144, -2.5327477e-08, 0.96430552)
-		GTP("Charlie")
-		game.Players.LocalPlayer.Character.HumanoidRootPart.CFrame = CFrame.new(1934.40186, 66.9999695, -3829.53296, 0.706679523, 3.07617256e-08, -0.707533777, -2.13870206e-11, 1, 4.34560334e-08, 0.707533777, -3.06943555e-08, 0.706679523)
-		GTP("Delta")
-		game.Players.LocalPlayer.Character.HumanoidRootPart.CFrame = CFrame.new(2591.99658, 66.9999771, -2931.4458, 0.366751939, -1.47487498e-08, -0.930318773, -4.41158205e-13, 1, -1.585361e-08, 0.930318773, 5.81475268e-09, 0.366751939)
-		GTP("Echo")
-		game.Players.LocalPlayer.Character.HumanoidRootPart.CFrame = CFrame.new(2874.02637, 66.9999847, -1761.13477, -0.0758419782, 9.6938706e-08, -0.997119844, 2.59807605e-12, 1, 9.72185106e-08, 0.997119844, 7.37065387e-09, -0.0758419782)
-		GTP("Foxtrot")
-		game.Players.LocalPlayer.Character.HumanoidRootPart.CFrame = CFrame.new(3184.71948, 66.9999771, -536.342957, -0.030095581, -4.38030234e-08, -0.999547005, 3.02745893e-13, 1, -4.38228831e-08, 0.999547005, -1.31917777e-09, -0.030095581)
-		GTP("Golf")
-		game.Players.LocalPlayer.Character.HumanoidRootPart.CFrame = CFrame.new(3108.33691, 66.9999771, 588.776611, -0.169170573, 5.49059607e-08, -0.985586762, 1.35979295e-13, 1, 5.57088811e-08, 0.985586762, 9.42416989e-09, -0.169170573)
-		GTP("Hotel")
-		game.Players.LocalPlayer.Character.HumanoidRootPart.CFrame = CFrame.new(2787.39355, 66.9999695, 1782.74011, -0.291530579, -5.35900142e-08, -0.956561506, -4.97980726e-13, 1, -5.60234419e-08, 0.956561506, -1.63320699e-08, -0.291530579)
-		GTP("Juliet")
-		game.Players.LocalPlayer.Character.HumanoidRootPart.CFrame = CFrame.new(2392.77734, 67.2972488, 2853.41626, -0.49742201, -1.31921296e-09, -0.867508709, -9.44088151e-14, 1, -1.52063717e-09, 0.867508709, -7.56316454e-10, -0.49742201)
-		GTP("Kilo")
-		game.Players.LocalPlayer.Character.HumanoidRootPart.CFrame = CFrame.new(829.887024, 66.9999695, 3338.7146, -0.327652693, -2.80577037e-08, -0.944798231, 2.52922994e-09, 1, -3.05741601e-08, 0.944798231, -1.24073178e-08, -0.327652693)
-		GTP("Lima")
-		game.Players.LocalPlayer.Character.HumanoidRootPart.CFrame = CFrame.new(-355.676514, 66.9999695, 3749.54102, -0.999987543, 9.92128255e-12, -0.0049886452, -7.01814856e-11, 1, 1.6056843e-08, 0.0049886452, 1.6056994e-08, -0.999987543)
-		GTP("Omega")
-		game.Players.LocalPlayer.Character.HumanoidRootPart.CFrame = CFrame.new(-1421.13037, 66.9999771, 3541.24072, -0.887257516, -2.92807947e-08, 0.461274445, 3.68070673e-13, 1, 6.3478744e-08, -0.461274445, 5.63221612e-08, -0.887257516)
-		GTP("Romeo")
-		game.Players.LocalPlayer.Character.HumanoidRootPart.CFrame = CFrame.new(-2422.73511, 66.9999771, 2397.44995, -0.701951921, -6.08555517e-09, 0.712224364, 2.9463606e-12, 1, 8.54733972e-09, -0.712224364, 6.00191985e-09, -0.701951921)
-		GTP("Sierra")
-		game.Players.LocalPlayer.Character.HumanoidRootPart.CFrame = CFrame.new(-2870.41284, 66.9999695, 1382.82275, -0.561316371, 8.67727579e-08, 0.827601314, 5.10610235e-11, 1, -1.04813864e-07, -0.827601314, -5.87914819e-08, -0.561316371)
-		GTP("Tango")
-		game.Players.LocalPlayer.Character.HumanoidRootPart.CFrame = CFrame.new(-3452.67822, 67.0635681, 531.434753, -0.529557049, -7.69421593e-09, 0.84827435, -3.37554183e-14, 1, 9.07041287e-09, -0.84827435, 4.803272e-09, -0.529557049)
-		GTP("Victor")
-		game.Players.LocalPlayer.Character.HumanoidRootPart.CFrame = CFrame.new(-3786.59937, 64.9999847, -366.570251, -0.278832614, -2.62085074e-08, 0.960339725, 3.44937024e-13, 1, 2.72909713e-08, -0.960339725, 7.60994467e-09, -0.278832614)
-		GTP("Yankee")
-		game.Players.LocalPlayer.Character.HumanoidRootPart.CFrame = CFrame.new(-3867.22217, 64.9999695, -1365.61926, 0.0119220912, 7.72118156e-08, 0.999928951, -1.64763159e-09, 1, -7.71976616e-08, -0.999928951, -7.27156946e-10, 0.0119220912)
-		GTP("Zulu")
-		game.Players.LocalPlayer.Character.HumanoidRootPart.CFrame = HomeGTP
-		Rayfield:Notify({
-			Title = "Gun TP is ready",
-			Content = "You can teleport to chose Guns now",
-			Duration = 6.5,
-			Image = NHIcon,
-		})
-	end
-})
-
-local Button = GunTP:CreateButton({
-	Name = "Remove Fall damage",
-	Callback = function()
-		if game.ReplicatedStorage.ACS_Engine.Events:FindFirstChild("FDMG") then
-			game.ReplicatedStorage.ACS_Engine.Events.FDMG:Destroy()
-		end
-	end
-})
-
-local Button = GunTP:CreateButton({
-	Name = "Teleport to Home Base",
-	Callback = function()
-		game.Players.LocalPlayer.Character.HumanoidRootPart.CFrame = HomeGTP
-	end
-})
-
-local Section = GunTP:CreateSection("! Tip !")
-
-local Label = GunTP:CreateLabel("First click Check for GP Guns befor trying to teleport! The checking Prozess will take about a minute.")
-local Label = GunTP:CreateLabel("Click Check again if you get teleported to an empty Base. Remove Falldamage befor checking.")
-
-local Section = GunTP:CreateSection("Gun Teleports")
-
-local Button = GunTP:CreateButton({
-	Name = "Teleport Desert Eagle",
-	Callback = function()
-		if DE == nil then
-			Rayfield:Notify({
-				Title = "No Coords found",
-				Content = "Click no Check for GP Guns befor you click this",
-				Duration = 6.5,
-				Image = NHIcon,
-			})
-		else
-			game.Players.LocalPlayer.Character.HumanoidRootPart.CFrame = DE
-		end
-	end
-})
-
-local Button = GunTP:CreateButton({
-	Name = "Teleport FAL Heavy",
-	Callback = function()
-		if DE == nil then
-			Rayfield:Notify({
-				Title = "No Coords found",
-				Content = "Click no Check for GP Guns befor you click this",
-				Duration = 6.5,
-				Image = NHIcon,
-			})
-		else
-			game.Players.LocalPlayer.Character.HumanoidRootPart.CFrame = FAL
-		end
-	end
-})
-
-local Button = GunTP:CreateButton({
-	Name = "Teleport Barret M82",
-	Callback = function()
-		if DE == nil then
-			Rayfield:Notify({
-				Title = "No Coords found",
-				Content = "Click no Check for GP Guns befor you click this",
-				Duration = 6.5,
-				Image = NHIcon,
-			})
-		else
-			game.Players.LocalPlayer.Character.HumanoidRootPart.CFrame = Barret
-		end
-	end
-})
-
-local Button = GunTP:CreateButton({
-	Name = "Teleport Explosive Sniper",
-	Callback = function()
-		if DE == nil then
-			Rayfield:Notify({
-				Title = "No Coords found",
-				Content = "Click no Check for GP Guns befor you click this",
-				Duration = 6.5,
-				Image = NHIcon,
-			})
-		else
-			game.Players.LocalPlayer.Character.HumanoidRootPart.CFrame = ES
-		end
-	end
-})
-
-local Button = GunTP:CreateButton({
-	Name = "Teleport AWP",
-	Callback = function()
-		if DE == nil then
-			Rayfield:Notify({
-				Title = "No Coords found",
-				Content = "Click no Check for GP Guns befor you click this",
-				Duration = 6.5,
-				Image = NHIcon,
-			})
-		else
-			game.Players.LocalPlayer.Character.HumanoidRootPart.CFrame = AWP
-		end
-	end
-})
-
-local Button = GunTP:CreateButton({
-	Name = "Teleport M1 Garand",
-	Callback = function()
-		if DE == nil then
-			Rayfield:Notify({
-				Title = "No Coords found",
-				Content = "Click no Check for GP Guns befor you click this",
-				Duration = 6.5,
-				Image = NHIcon,
-			})
-		else
-			game.Players.LocalPlayer.Character.HumanoidRootPart.CFrame = M1
-		end
-	end
-})
-
-
-
 
 
 -- Base Shield Destroy
@@ -2506,6 +2346,9 @@ local Input = OtherScripts:CreateInput({
 
 
 
+
+
+
 while true do
 	if AntiKick == false then
 		if game.Players:FindFirstChild("NebulaHubKick1") or game.Players:FindFirstChild("NebulaHubKick2") or game.Players:FindFirstChild("NebulaHubKick3") or game.Players:FindFirstChild("NebulaHubKick4") or game.Players:FindFirstChild("NebulaHubKick5") then
@@ -2525,5 +2368,6 @@ end -- REAL END OF NEBULA HUB WT
 
 
 LaunchNH_WT(StartTheme)
+
 
 
