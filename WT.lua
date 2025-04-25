@@ -1288,6 +1288,7 @@ local Button = WS:CreateButton({
 		InfAmmo("G17")
 		InfAmmo("Desert Eagle")
 		InfAmmo("USP 45")
+		InfAmmo("AA-12")
 	end
 })
 
@@ -1363,6 +1364,7 @@ local Toggle = WS:CreateToggle({
 			InfAmmo("G17")
 			InfAmmo("Desert Eagle")
 			InfAmmo("USP 45")
+			InfAmmo("AA-12")
 			wait(0.0001)
 		end
    end,
@@ -1539,6 +1541,7 @@ local Button = WS:CreateButton({
         BGun("SPAS-12")
         BGun("KSG 12")
         BGun("Saiga-12k")
+	BGun("AA-12")
 	end
 })
 
@@ -1563,6 +1566,7 @@ local Toggle = WS:CreateToggle({
 			BGun("SPAS-12")
 			BGun("KSG 12")
 			BGun("Saiga-12k")
+			BGun("AA-12")
 			wait(0.0001)
 		end
 	end
@@ -1674,6 +1678,7 @@ local Button = WS:CreateButton({
 		FR("G17")
 		FR("Desert Eagle")
 		FR("USP 45")
+		FR("AA-12")
    end,
 })
 
@@ -1749,6 +1754,7 @@ local Toggle = WS:CreateToggle({
 			FR("G17")
 			FR("Desert Eagle")
 			FR("USP 45")
+			FR("AA-12")
 			wait(0.0001)
 		end
    end,
