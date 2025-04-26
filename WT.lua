@@ -3,7 +3,7 @@ local function LaunchNH_WT(LTheme)
 
 local version = "0.9.9"
 local DC = "https://discord.gg/EEMafffGeY"
-local Key = {"443356", "WTHP"}
+local Key = {"667756", "WTHP"}
 local PW = "WTHP-Vincent"
 local NHIcon = 7733752575
 
@@ -62,7 +62,7 @@ local Window = Rayfield:CreateWindow({
       RememberJoins = true -- Set this to false to make them join the discord every time they load it up
    },
 
-   KeySystem = false, -- Set this to true to use our key system
+   KeySystem = true, -- Set this to true to use our key system
    KeySettings = {
       Title = "Nebula Hub | ⚔️ War Tycoon ⚡ | v" .. version,
       Subtitle = "Enter Key",
