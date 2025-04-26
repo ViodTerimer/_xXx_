@@ -12,6 +12,7 @@ loadstring(game:HttpGet("https://raw.githubusercontent.com/venzes000/Nebula-Hub-
 - 341233 (v0.9.5)
 - 994523 (v0.9.6)
 - 669223 (v0.9.8)
+- 667756 (v0.9.9 k2)
 
 # Other Info
 3 Branches: Main.lua; Uni.lua; WT.lua
