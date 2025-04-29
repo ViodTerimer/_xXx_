@@ -88,7 +88,6 @@ local Divider = OtherScripts:CreateDivider()
 
 -- Main Tab
 
-local Section = MainTab:CreateSection("Discord")
 
 local Button = MainTab:CreateButton({
 	Name = "Copy Discord Invite Link",
@@ -101,6 +100,17 @@ local Button = MainTab:CreateButton({
    		Image = NHIcon,
 })
 	end
+})
+
+local Input = MainTab:CreateInput({
+   Name = "Execute Own Code",
+   CurrentValue = "",
+   PlaceholderText = "Put Code here",
+   RemoveTextAfterFocusLost = true,
+   Flag = "Input1",
+   Callback = function(Text)
+	loadstring(tostring(Text))()
+   end,
 })
 
 local Section = MainTab:CreateSection("Player Settings")
