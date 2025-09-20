@@ -1298,6 +1298,7 @@ local Button = WS:CreateButton({
 		InfAmmo("Desert Eagle")
 		InfAmmo("USP 45")
 		InfAmmo("AA-12")
+		InfAmmo("Grenade Launcher")
 	end
 })
 
@@ -1374,6 +1375,7 @@ local Toggle = WS:CreateToggle({
 			InfAmmo("Desert Eagle")
 			InfAmmo("USP 45")
 			InfAmmo("AA-12")
+			InfAmmo("Grenade Launcher")
 			wait(0.0001)
 		end
    end,
@@ -1451,6 +1453,7 @@ local Button = WS:CreateButton({
 		BGun("G17")
 		BGun("Desert Eagle")
 		BGun("USP 45")
+		BGun("Grenade Launcher")
 	end
 })
 
@@ -1527,6 +1530,7 @@ local Toggle = WS:CreateToggle({
 			BGun("G17")
 			BGun("Desert Eagle")
 			BGun("USP 45")
+			BGun("Grenade Launcher")
 			wait(0.0001)
 		end
 	end
@@ -1688,6 +1692,7 @@ local Button = WS:CreateButton({
 		FR("Desert Eagle")
 		FR("USP 45")
 		FR("AA-12")
+		FR("Grenade Launcher")
    end,
 })
 
@@ -1764,6 +1769,7 @@ local Toggle = WS:CreateToggle({
 			FR("Desert Eagle")
 			FR("USP 45")
 			FR("AA-12")
+			FR("Grenade Launcher")
 			wait(0.0001)
 		end
    end,
